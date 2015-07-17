@@ -21,18 +21,32 @@ $ npm install git+https://github.com/fs-components/fs-person.git
 | hide-gender    | Don't show the gender of the person in the output |
 | full-life-span | Display the day and month of the life span |
 | icon-size      | Size of the gender icon, `small` (default) or `medium` |
-| portrait       | Show a large picture of the person if one has been set |
+| portrait       | Show a large picture of the person if `portraitUrl` is set on the person |
 
 ## Person object structure
 
-```json
-{
+```js
+var personObj = {
   "id": "KWN5-3PH",
   "name": "Huckleberry Finn",
   "gender": "MALE",
   "lifeSpan": "1832-1912",
-  "fullLifeSpan": "23 February 1832 &amp;ndash; 10 September 1912"
+  "fullLifeSpan": "23 February 1832 &ndash; 10 September 1912",
+  "portraitUrl": "https://path/to/portrait.png"
 }
+```
+
+## JavaScript API
+
+```js
+person = new fsPerson();
+
+// you can either set the `src` to the id or use `setPerson()` and pass a object representing the person (so you don't have to JSON stringify it first).
+person.src = 'ABCD-123';
+// OR
+person.setPerson(personObj);
+
+document.body.appendChild(person);
 ```
 
 ## License
