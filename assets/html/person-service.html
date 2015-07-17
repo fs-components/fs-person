@@ -1,0 +1,101 @@
+<script>
+  // TODO: remove `mockPerosn` and `flag` from updatePerosn and getPerson when done testing
+  var mockPerson = {
+    "id": "KWN5-3PH",
+    "name": "Huckleberry Finn",
+    "gender": "MALE",
+    "lifeSpan": "1832-1912",
+    "fullLifeSpan": "23 February 1832 &amp;ndash; 10 September 1912"
+  };
+
+  (function(FS) {
+    FS.services = FS.services || {};
+
+    var personApi = '/tree-data/person/{0}/summary?tz=420&locale=en&_={1};';
+
+    // cached promises
+    var cache = {};
+
+    /**
+     * Bust IEs aggressive caching by appending the date time to each request.
+     * @return {number}
+     */
+    function getCahceBuster() {
+      return new Date().getTime();
+    }
+
+    /**
+     * Create a singleton service that all fsPerson components will use to fetch and cache
+     * the person object per id.
+     */
+    var PersonService = {
+      /**
+       * Get a person from the database.
+       * @param {string} pid - ID of the person to get.
+       *
+       * @returns {Promise}
+       */
+      getPerson: function(pid, flag) {
+
+        // return the cached promise to not make another network request
+        if (cache[pid]) {
+          return cache[pid];
+        }
+
+        cache[pid] = new Promise(function(resolve, reject) {
+
+          // return the mock data for testing
+          // TODO: remove when done testing
+          if (flag) {
+            return resolve(mockPerson);
+          }
+
+          var req = new XMLHttpRequest();
+          req.open('GET', personApi.format(pid, getCahceBuster()) );
+
+          req.onload = function() {
+
+            if (req.status === 200) {
+              var data = JSON.parse(req.response);
+              resolve(data.data);
+            }
+            else {
+              reject(Error(req.statusText));
+            }
+          };
+
+          // Handle network errors
+          req.onerror = function() {
+            reject(Error("Network Error"));
+          };
+
+          req.send();
+        });
+
+        return cache[pid];
+      },
+
+      /**
+       * Flush the promise cache for a person and trigger the updatePerson event.
+       * @param {string} pid - ID of the person that updated.
+       */
+      updatePerson: function(pid, flag) {
+        cache[pid] = null;
+
+        this.getPerson(pid, flag).then(function(person) {
+          var event = new CustomEvent('updatePerson', {'detail': person});
+          document.dispatchEvent(event);
+        });
+      }
+    };
+
+    /**
+     * Return the singleton service.
+     * @return {PersonService}
+     */
+    FS.services.PersonService = function() {
+      return PersonService;
+    };
+
+  })(FS || {});
+</script>

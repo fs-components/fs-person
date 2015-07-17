@@ -1,0 +1,36 @@
+{
+  "name": "fs-person",
+  "description": "fs-person web component",
+  "version": "1.0.0",
+  "homepage": "https://github.com/fs-components/fs-person",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fs-components/fs-person.git"
+  },
+  "keywords": [
+    "FamilySearch",
+    "Person"
+  ],
+  "bugs": {
+    "url": "https://github.com/fs-components/fs-person/issues"
+  },
+  "author": {
+    "name": "FamilySearch",
+    "url": "https://familysearch.org/"
+  },
+  "contributors": [
+    {
+      "name": "Steven Lambert",
+      "email": "steven.lambert@familysearch.org"
+    }
+  ],
+  "engines": {
+    "node": "0.10.x"
+  },
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "private": false,
+  "dependencies": {
+    "native-promise-only": "^0.8.0-a"
+  },
+  "devDependencies": {}
+}

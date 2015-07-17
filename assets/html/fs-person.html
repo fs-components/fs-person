@@ -1,0 +1,227 @@
+<link rel="import" href="person-service.html" />
+
+<dom-module id="fs-person">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <div class="fs-person-portrait">
+
+      <!-- portrait -->
+      <template is="dom-if" if="{{portrait}}">
+        <div class="fs-person-portrait__container">
+          <div class$="{{portraitClasses}}">
+            <template is="dom-if" if="{{person.portraitUrl}}">
+              <img class="fs-person-portrait__image" _src="{{person.portraitUrl}}" data-test="portrait">
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <div class="fs-person-portrait__gender-wrapper">
+
+        <div class="fs-person-gender">
+
+          <!-- gender -->
+          <template is="dom-if" if="{{!hideGender}}">
+            <div class="fs-person-gender__container" class$="{{genderSizeClasses}}">
+              <div class="fs-person-gender__image fs-couple__connector" class$="{{genderImageClasses}}"></div>
+            </div>
+          </template>
+
+          <div class="fs-person-vitals">
+
+            <!-- name -->
+            <div class="fs-person-vitals__name" ng-class="nameConclusionStyle">
+              <a href="#view=ancestor&person={{person.id}}" class="fs-person-vitals__link" data-fs-add-wrapper-if="openPersonCard" data-cmd="openPersonCard" data-cmd-data='{{openPersonCardData}}' on-click="{{openPersonCard}}">
+                <span class="fs-person-vitals__name-full" data-ng-bind-html="name" data-test="full-name">{{name}}</span>
+              </a>
+            </div>
+
+            <!-- lifespan, id -->
+            <div class="fs-person-details__container">
+              <template is="dom-if" if="{{showLifeSpan}}">
+                <span id="test" class="fs-person-details__lifeSpan" data-test="lifeSpan">{{lifeSpan}}</span>
+              </template>
+
+              <template is="dom-if" if="{{showDot}}">
+                <span class="fs-person-details__separator">&nbsp;•&nbsp;</span>
+              </template>
+
+              <template is="dom-if" if="{{showId}}">
+                <span class="fs-person-details__id" data-test="pid">{{person.id}}</span>
+              </template>
+
+              <span class="fs-person-details__selection-stopper">&#8203;</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </template>
+</dom-module>
+
+<script>
+var htmlEntities = /&(?:[a-z]+|#\d+);/;
+
+fsPerson = Polymer({
+  is: 'fs-person',
+  properties: {
+    // declared properties
+    src: {
+      type: String,
+      observer: 'srcChanged'
+    },
+    hideLifeSpan: {
+      type: Boolean,
+      value: false
+    },
+    hideId: {
+      type: Boolean,
+      value: false
+    },
+    hideGender: {
+      type: Boolean,
+      value: false
+    },
+    fullLifeSpan: {
+      type: Boolean,
+      value: false
+    },
+    iconSize: {
+      type: String,
+      value: 'small'
+    },
+    portrait: {
+      type: Boolean,
+      value: false
+    },
+
+    // virtual properties
+    showLifeSpan: {
+      type: Boolean,
+      computed: 'computeShowLifeSpan(hideLifeSpan, lifeSpan)'
+    },
+    showDot: {
+      type: Boolean,
+      computed: 'computeShowDot(hideLifeSpan, hideId, lifeSpan, person.id)'
+    },
+    showId: {
+      type: Boolean,
+      computed: 'computeShowId(hideId, person.id)'
+    }
+  },
+
+  /**
+   * Create services and attach event listeners.
+   */
+  created: function() {
+    var _this = this;
+
+    this.personService = FS.services.PersonService();
+
+    // add event listeners
+    document.addEventListener('updatePerson', function(e) {
+      if (e.detail && e.detail.id === _this.pid) {
+        _this.setPerson(e.detail);
+      }
+    });
+  },
+
+  /**
+   * Update the pid and get the person from the person service.
+   * @param {string} newValue - The updated pid.
+   */
+  srcChanged: function(newValue) {
+    var _this = this;
+
+    // an id was used since a JSON string would start with a '{'
+    if (typeof newValue === 'string' && newValue[0] !== '{') {
+      this.personService.getPerson(newValue).then(function(person) {
+        _this.setPerson(person);
+      }, function(err) {
+        console.error(err);
+      });
+    }
+    // object was used
+    else {
+      try {
+        var person = JSON.parse(newValue);
+        this.setPerson(person);
+      }
+      catch (err) {
+        console.error(err);
+      }
+    }
+  },
+
+  /**
+   * Set up the person and how the information is displayed
+   * @param {object} person - The person object.
+   */
+  setPerson: function(person) {
+    console.log('person changed');
+
+    this.person = person;
+
+    // portrait
+    if (this.portrait) {
+      // if there is a portrait, the icon size must be small, never medium
+      this.iconSize = 'small';
+    }
+    this.gender = (this.person.gender || 'unknown').toLowerCase();
+
+    // gender
+    this.iconSize = this.iconSize || 'medium';
+    this.genderSizeClasses = 'fs-person-gender__container fs-person-gender--' + this.iconSize;
+    this.genderImageClasses = 'fs-person-gender__image fs-icon-' + this.iconSize + '-' + this.gender;
+    this.portraitClasses = 'fs-person-portrait__portrait fs-couple__connector fs-icon-before-portrait-' + this.gender;
+
+    // vitals
+    this.name = FS.htmlDecode(this.person.name);
+    this.lifeSpan = (this.fullLifeSpan ? this.person.fullLifeSpan : this.person.lifeSpan);
+
+    // full lifespan is encoded twice (&amp;ndash;)
+    while (htmlEntities.test(this.lifeSpan)) {
+      this.lifeSpan = FS.htmlDecode(this.lifeSpan);
+    }
+
+    this.title = (this.person.id ? this.name + '\n' + this.lifeSpan + ' • ' + this.person.id : '');
+  },
+
+  /**
+   * Compute virtual property showLifeSpan.
+   * @param {boolean} hideLifeSpan - True if the life span should not be showLifeSpan.
+   * @param {string} lifeSpan - The life span of the person.
+   */
+  computeShowLifeSpan: function(hideLifeSpan, lifeSpan) {
+    return !!(!hideLifeSpan && lifeSpan)
+  },
+
+  /**
+   * Compute virtual property showDot.
+   * @param {boolean} hideLifeSpan - True if the life span should not be shown.
+   * @param {boolean} hideId - True if the pid should not be shown.
+   * @param {string} lifeSpan - The life span of the person.
+   * @param {string} pid - The person id.
+   */
+  computeShowDot: function(hideLifeSpan, hideId, lifeSpan, pid) {
+    return !!(!hideLifeSpan && !hideId && lifeSpan && pid);
+  },
+
+  /**
+   * Compute virtual property showId.
+   * @param {boolean} hideId - True if the pid should not be shown.
+   * @param {string} pid - The person id.
+   */
+  computeShowId: function(hideId, pid) {
+    return !!(!hideId && pid);
+  }
+});
+</script>
