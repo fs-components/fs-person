@@ -141,21 +141,21 @@ fsPerson = Polymer({
   srcChanged: function(newValue) {
     var _this = this;
 
-    // an id was used since a JSON string would start with a '{'
-    if (typeof newValue === 'string' && newValue[0] !== '{') {
-      this.personService.getPerson(newValue).then(function(person) {
-        _this.setPerson(person);
-      }, function(err) {
-        console.error(err);
-      });
+    // try parsing the src to see if it's a JSON string
+    try {
+      var person = JSON.parse(newValue);
+      this.setPerson(person);
     }
-    // object was used
-    else {
-      try {
-        var person = JSON.parse(newValue);
-        this.setPerson(person);
+    catch (err) {
+      // otherwise pass it to the person service to get from the database
+      if (typeof newValue === 'string') {
+        this.personService.getPerson(newValue).then(function(person) {
+          _this.setPerson(person);
+        }, function(err) {
+          console.error(err);
+        });
       }
-      catch (err) {
+      else {
         console.error(err);
       }
     }
@@ -166,8 +166,6 @@ fsPerson = Polymer({
    * @param {object} person - The person object.
    */
   setPerson: function(person) {
-    console.log('person changed');
-
     this.person = person;
 
     // portrait
